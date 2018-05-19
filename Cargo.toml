@@ -1,0 +1,16 @@
+[package]
+authors = ["Brandon Matthews <bmatthews@zipcar.com>"]
+name = "serial-embedded-hal"
+version = "0.1.0"
+description = "An implementation of embedded-hal for non-embedded platforms"
+keywords = ["hal", "embedded-hal", "serial"]
+categories = ["hal", "embedded-hal", "serial"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/thenewwazoo/serial-embedded-hal"
+documentation = "https://docs.rs/serial-embedded-hal"
+
+[dependencies]
+embedded-hal = "0.2.1"
+nb = "0.1.1"
+serial = "0.4.0"
