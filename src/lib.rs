@@ -59,16 +59,17 @@ impl hal::serial::Read<u8> for Rx {
     fn read(&mut self) -> nb::Result<u8, Self::Error> {
         let mut buf: [u8; 1] = [0];
         let mut inner = (*self.inner).borrow_mut();
-        let _n = match inner.read(&mut buf) {
-            Ok(s) => s,
-            Err(e) => {
-                return Err(nb::Error::Other(serial::Error::new(
+        match inner.read(&mut buf) {
+            Ok(_) => Ok(buf[0]),
+            Err(e) => match e.kind() {
+                std::io::ErrorKind::WouldBlock => Err(nb::Error::WouldBlock),
+                std::io::ErrorKind::TimedOut => Err(nb::Error::WouldBlock),
+                _ => Err(nb::Error::Other(serial::Error::new(
                     serial::ErrorKind::Io(e.kind()),
                     "bad read",
-                )));
-            }
-        };
-        Ok(buf[0])
+                ))),
+            },
+        }
     }
 }
 
