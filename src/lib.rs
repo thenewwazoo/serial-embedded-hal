@@ -13,20 +13,19 @@ pub use serial::Parity;
 pub use serial::PortSettings;
 pub use serial::StopBits;
 
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 /// Newtype over [`serial-rs`](https://crates.io/crates/serial)'s serial port abstraction.
 pub struct Serial {
-    inner: Rc<RefCell<serial::SystemPort>>,
+    inner: Arc<Mutex<serial::SystemPort>>,
 }
 
 pub struct Tx {
-    inner: Rc<RefCell<serial::SystemPort>>,
+    inner: Arc<Mutex<serial::SystemPort>>,
 }
 
 pub struct Rx {
-    inner: Rc<RefCell<serial::SystemPort>>,
+    inner: Arc<Mutex<serial::SystemPort>>,
 }
 
 impl Serial {
@@ -37,17 +36,17 @@ impl Serial {
         let mut port = serial::open(&port)?;
         port.configure(settings)?;
         Ok(Serial {
-            inner: Rc::new(RefCell::new(port)),
+            inner: Arc::new(Mutex::new(port)),
         })
     }
 
     pub fn split(self) -> (Tx, Rx) {
         (
             Tx {
-                inner: Rc::clone(&self.inner),
+                inner: Arc::clone(&self.inner),
             },
             Rx {
-                inner: Rc::clone(&self.inner),
+                inner: Arc::clone(&self.inner),
             },
         )
     }
@@ -58,7 +57,7 @@ impl hal::serial::Read<u8> for Rx {
 
     fn read(&mut self) -> nb::Result<u8, Self::Error> {
         let mut buf: [u8; 1] = [0];
-        let mut inner = (*self.inner).borrow_mut();
+        let mut inner = (*self.inner).lock().unwrap();
         match inner.read(&mut buf) {
             Ok(_) => Ok(buf[0]),
             Err(e) => match e.kind() {
@@ -77,7 +76,7 @@ impl hal::serial::Write<u8> for Tx {
     type Error = serial::Error;
 
     fn write(&mut self, byte: u8) -> nb::Result<(), Self::Error> {
-        let mut inner = (*self.inner).borrow_mut();
+        let mut inner = (*self.inner).lock().unwrap();
         match inner.write(&[byte]) {
             Ok(_) => Ok(()),
             Err(e) => Err(nb::Error::Other(serial::Error::new(
@@ -88,7 +87,7 @@ impl hal::serial::Write<u8> for Tx {
     }
 
     fn flush(&mut self) -> nb::Result<(), Self::Error> {
-        let mut inner = (*self.inner).borrow_mut();
+        let mut inner = (*self.inner).lock().unwrap();
         match inner.flush() {
             Ok(_) => Ok(()),
             Err(e) => Err(nb::Error::Other(serial::Error::new(
